@@ -527,7 +527,29 @@ class Message
                 try {
                     $parsed_date = Carbon::parse($date);
                 } catch (\Exception $_e) {
-                    // in case of unknown timezone tri to parse date without timezone
+                    $parsed_date = null;
+                }
+
+                // in case of timezone string 'UT' try to replace with 'UTC' and parse date
+                if (is_null($parsed_date)) {
+                    try {
+                        $parsed_date = Carbon::parse(str_replace('UT', 'UTC', $date));
+                    } catch (\Exception $_e) {
+                        $parsed_date = null;
+                    }
+                }
+
+                // in case of timezone string 'Eastern Standard Time' try to replace with 'EST' and parse date
+                if (is_null($parsed_date)) {
+                    try {
+                        $parsed_date = Carbon::parse(str_replace('Eastern Standard Time', 'EST', $date));
+                    } catch (\Exception $_e) {
+                        $parsed_date = null;
+                    }
+                }
+
+                // in case of unknown timezone try to parse date without timezone
+                if (is_null($parsed_date)) {
                     if (preg_match('/^.*(\d\d:\d\d)/', $date, $matches)) {
                         try {
                             $parsed_date = Carbon::parse($matches[0]);
