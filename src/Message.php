@@ -1,25 +1,25 @@
 <?php
 /*
-* File:     Message.php
-* Category: -
-* Author:   M. Goldenbaum
-* Created:  19.01.17 22:21
-* Updated:  -
-*
-* Description:
-*  -
-*/
+ * File:     Message.php
+ * Category: -
+ * Author:   M. Goldenbaum
+ * Created:  19.01.17 22:21
+ * Updated:  04.02.20 08:29
+ *
+ * Description:
+ *  -
+ */
 
 namespace Webklex\PHPIMAP;
 
 use Carbon\Carbon;
+use Illuminate\Support\Str;
 use Webklex\PHPIMAP\Exceptions\InvalidMessageDateException;
 use Webklex\PHPIMAP\Exceptions\MaskNotFoundException;
 use Webklex\PHPIMAP\Exceptions\MethodNotFoundException;
 use Webklex\PHPIMAP\Support\AttachmentCollection;
 use Webklex\PHPIMAP\Support\FlagCollection;
 use Webklex\PHPIMAP\Support\Masks\MessageMask;
-use Illuminate\Support\Str;
 
 /**
  * Class Message
@@ -76,7 +76,8 @@ use Illuminate\Support\Str;
  * @method array getSender()
  * @method array setSender(array $sender)
  */
-class Message {
+class Message
+{
 
     /**
      * Client instance
@@ -194,10 +195,11 @@ class Message {
      * @throws Exceptions\ConnectionFailedException
      * @throws InvalidMessageDateException
      */
-    public function __construct($uid, $msglist, Client $client, $fetch_options = null, $fetch_body = false, $fetch_attachment = false, $fetch_flags = false) {
+    public function __construct($uid, $msglist, Client $client, $fetch_options = null, $fetch_body = false, $fetch_attachment = false, $fetch_flags = false)
+    {
 
         $default_mask = $client->getDefaultMessageMask();
-        if($default_mask != null) {
+        if ($default_mask != null) {
             $this->mask = $default_mask;
         }
 
@@ -216,7 +218,7 @@ class Message {
         $this->msglist = $msglist;
         $this->client = $client;
 
-        $this->uid =  ($this->fetch_options == IMAP::FT_UID) ? $uid : $uid;
+        $this->uid = ($this->fetch_options == IMAP::FT_UID) ? $uid : $uid;
         $this->msgn = ($this->fetch_options == IMAP::FT_UID) ? \imap_msgno($this->client->getConnection(), $uid) : $uid;
 
         $this->parseHeader();
@@ -238,18 +240,19 @@ class Message {
      * @return mixed
      * @throws MethodNotFoundException
      */
-    public function __call($method, $arguments) {
-        if(strtolower(substr($method, 0, 3)) === 'get') {
+    public function __call($method, $arguments)
+    {
+        if (strtolower(substr($method, 0, 3)) === 'get') {
             $name = Str::snake(substr($method, 3));
 
-            if(in_array($name, array_keys($this->attributes))) {
+            if (in_array($name, array_keys($this->attributes))) {
                 return $this->attributes[$name];
             }
 
-        }elseif (strtolower(substr($method, 0, 3)) === 'set') {
+        } elseif (strtolower(substr($method, 0, 3)) === 'set') {
             $name = Str::snake(substr($method, 3));
 
-            if(in_array($name, array_keys($this->attributes))) {
+            if (in_array($name, array_keys($this->attributes))) {
                 $this->attributes[$name] = array_pop($arguments);
 
                 return $this->attributes[$name];
@@ -257,7 +260,7 @@ class Message {
 
         }
 
-        throw new MethodNotFoundException("Method ".self::class.'::'.$method.'() is not supported');
+        throw new MethodNotFoundException("Method " . self::class . '::' . $method . '() is not supported');
     }
 
     /**
@@ -266,7 +269,8 @@ class Message {
      *
      * @return mixed
      */
-    public function __set($name, $value) {
+    public function __set($name, $value)
+    {
         $this->attributes[$name] = $value;
 
         return $this->attributes[$name];
@@ -277,8 +281,9 @@ class Message {
      *
      * @return mixed|null
      */
-    public function __get($name) {
-        if(isset($this->attributes[$name])) {
+    public function __get($name)
+    {
+        if (isset($this->attributes[$name])) {
             return $this->attributes[$name];
         }
 
@@ -294,7 +299,8 @@ class Message {
      * @return bool
      * @throws Exceptions\ConnectionFailedException
      */
-    public function copy($mailbox, $options = 0) {
+    public function copy($mailbox, $options = 0)
+    {
         $this->client->openFolder($this->folder_path);
         return \imap_mail_copy($this->client->getConnection(), $this->uid, $mailbox, IMAP::CP_UID);
     }
@@ -308,7 +314,8 @@ class Message {
      * @return bool
      * @throws Exceptions\ConnectionFailedException
      */
-    public function move($mailbox, $options = 0) {
+    public function move($mailbox, $options = 0)
+    {
         $this->client->openFolder($this->folder_path);
         return \imap_mail_move($this->client->getConnection(), $this->uid, $mailbox, IMAP::CP_UID);
     }
@@ -318,7 +325,8 @@ class Message {
      *
      * @return bool
      */
-    public function hasTextBody() {
+    public function hasTextBody()
+    {
         return isset($this->bodies['text']);
     }
 
@@ -327,7 +335,8 @@ class Message {
      *
      * @return mixed
      */
-    public function getTextBody() {
+    public function getTextBody()
+    {
         if (!isset($this->bodies['text'])) {
             return false;
         }
@@ -340,7 +349,8 @@ class Message {
      *
      * @return bool
      */
-    public function hasHTMLBody() {
+    public function hasHTMLBody()
+    {
         return isset($this->bodies['html']);
     }
 
@@ -355,22 +365,23 @@ class Message {
      *
      * @deprecated 1.4.0:2.0.0 No longer needed. Use AttachmentMask::getImageSrc() instead
      */
-    public function getHTMLBody($replaceImages = false) {
+    public function getHTMLBody($replaceImages = false)
+    {
         if (!isset($this->bodies['html'])) {
             return null;
         }
 
         $body = $this->bodies['html']->content;
         if ($replaceImages !== false) {
-            $this->attachments->each(function($oAttachment) use(&$body, $replaceImages) {
+            $this->attachments->each(function ($oAttachment) use (&$body, $replaceImages) {
                 /** @var Attachment $oAttachment */
-                if(is_callable($replaceImages)) {
+                if (is_callable($replaceImages)) {
                     $body = $replaceImages($body, $oAttachment);
-                }elseif(is_string($replaceImages)) {
+                } elseif (is_string($replaceImages)) {
                     call_user_func($replaceImages, [$body, $oAttachment]);
-                }else{
+                } else {
                     if ($oAttachment->id && $oAttachment->getImgSrc() != null) {
-                        $body = str_replace('cid:'.$oAttachment->id, $oAttachment->getImgSrc(), $body);
+                        $body = str_replace('cid:' . $oAttachment->id, $oAttachment->getImgSrc(), $body);
                     }
                 }
             });
@@ -386,7 +397,8 @@ class Message {
      * @throws Exceptions\ConnectionFailedException
      * @throws InvalidMessageDateException
      */
-    private function parseHeader() {
+    private function parseHeader()
+    {
         $this->client->openFolder($this->folder_path);
         $this->header = $header = \imap_fetchheader($this->client->getConnection(), $this->uid, IMAP::FT_UID);
 
@@ -397,14 +409,14 @@ class Message {
         }
 
         if (property_exists($header, 'subject')) {
-            if($this->config['decoder']['message']['subject'] === 'utf-8') {
+            if ($this->config['decoder']['message']['subject'] === 'utf-8') {
                 $this->subject = \imap_utf8($header->subject);
-            }else{
+            } else {
                 $this->subject = mb_decode_mimeheader($header->subject);
             }
         }
 
-        foreach(['from', 'to', 'cc', 'bcc', 'reply_to', 'sender'] as $part){
+        foreach (['from', 'to', 'cc', 'bcc', 'reply_to', 'sender'] as $part) {
             $this->extractHeaderAddressPart($header, $part);
         }
 
@@ -433,10 +445,11 @@ class Message {
      *
      * @return int|null
      */
-    private function extractPriority($header) {
-        if(preg_match('/x\-priority\:.*([0-9]{1,2})/i', $header, $priority)){
+    private function extractPriority($header)
+    {
+        if (preg_match('/x\-priority\:.*([0-9]{1,2})/i', $header, $priority)) {
             $priority = isset($priority[1]) ? (int) $priority[1] : 0;
-            switch($priority){
+            switch ($priority) {
                 case IMAP::MESSAGE_PRIORITY_HIGHEST;
                     $priority = IMAP::MESSAGE_PRIORITY_HIGHEST;
                     break;
@@ -481,13 +494,14 @@ class Message {
      * @return Carbon|null
      * @throws InvalidMessageDateException
      */
-    private function parseDate($header) {
+    private function parseDate($header)
+    {
         $parsed_date = null;
 
         if (property_exists($header, 'date')) {
             $date = $header->date;
 
-            if(preg_match('/\+0580/', $date)) {
+            if (preg_match('/\+0580/', $date)) {
                 $date = str_replace('+0580', '+0530', $date);
             }
 
@@ -510,10 +524,19 @@ class Message {
                         $date = trim(array_pop($array));
                         break;
                 }
-                try{
+                try {
                     $parsed_date = Carbon::parse($date);
                 } catch (\Exception $_e) {
-                    throw new InvalidMessageDateException("Invalid message date. ID:".$this->getMessageId(), 1000, $e);
+                    // in case of unknown timezone tri to parse date without timezone
+                    if (preg_match('/^.*(\d\d:\d\d)/', $date, $matches)) {
+                        try {
+                            $parsed_date = Carbon::parse($matches[0]);
+                        } catch (\Exception $__e) {
+                            $parsed_date = null;
+                        }
+                    } else {
+                        $parsed_date = null;
+                    }
                 }
             }
         }
@@ -527,13 +550,14 @@ class Message {
      * @return void
      * @throws Exceptions\ConnectionFailedException
      */
-    private function parseFlags() {
+    private function parseFlags()
+    {
         $this->flags = FlagCollection::make([]);
 
         $this->client->openFolder($this->folder_path);
         $flags = \imap_fetch_overview($this->client->getConnection(), $this->uid, IMAP::FT_UID);
         if (is_array($flags) && isset($flags[0])) {
-            foreach($this->available_flags as $flag) {
+            foreach ($this->available_flags as $flag) {
                 $this->parseFlag($flags, $flag);
             }
         }
@@ -544,7 +568,8 @@ class Message {
      * @param array $flags
      * @param string $flag
      */
-    private function parseFlag($flags, $flag) {
+    private function parseFlag($flags, $flag)
+    {
         $flag = strtolower($flag);
 
         if (property_exists($flags[0], strtoupper($flag))) {
@@ -562,7 +587,8 @@ class Message {
      * @return object
      * @throws Exceptions\ConnectionFailedException
      */
-    public function getHeaderInfo() {
+    public function getHeaderInfo()
+    {
         if ($this->header_info == null) {
             $this->client->openFolder($this->folder_path);
             $this->header_info = \imap_headerinfo($this->client->getConnection(), $this->getMessageNo());
@@ -576,7 +602,8 @@ class Message {
      * @param object $header
      * @param string $part
      */
-    private function extractHeaderAddressPart($header, $part) {
+    private function extractHeaderAddressPart($header, $part)
+    {
         if (property_exists($header, $part)) {
             $this->$part = $this->parseAddresses($header->$part);
         }
@@ -588,7 +615,8 @@ class Message {
      *
      * @return array
      */
-    private function parseAddresses($list) {
+    private function parseAddresses($list)
+    {
         $addresses = [];
 
         foreach ($list as $item) {
@@ -608,7 +636,7 @@ class Message {
             } else {
                 $personalParts = \imap_mime_header_decode($address->personal);
 
-                if(is_array($personalParts)) {
+                if (is_array($personalParts)) {
                     $address->personal = '';
                     foreach ($personalParts as $p) {
                         $encoding = $this->getEncoding($p->text);
@@ -617,8 +645,8 @@ class Message {
                 }
             }
 
-            $address->mail = ($address->mailbox && $address->host) ? $address->mailbox.'@'.$address->host : false;
-            $address->full = ($address->personal) ? $address->personal.' <'.$address->mail.'>' : $address->mail;
+            $address->mail = ($address->mailbox && $address->host) ? $address->mailbox . '@' . $address->host : false;
+            $address->full = ($address->personal) ? $address->personal . ' <' . $address->mail . '>' : $address->mail;
 
             $addresses[] = $address;
         }
@@ -632,16 +660,17 @@ class Message {
      * @return $this
      * @throws Exceptions\ConnectionFailedException
      */
-    public function parseBody() {
+    public function parseBody()
+    {
         $this->client->openFolder($this->folder_path);
         $this->structure = \imap_fetchstructure($this->client->getConnection(), $this->uid, IMAP::FT_UID);
 
-        if(property_exists($this->structure, 'parts')){
+        if (property_exists($this->structure, 'parts')) {
             $parts = $this->structure->parts;
 
-            foreach ($parts as $part)  {
-                foreach ($part->parameters as $parameter)  {
-                    if($parameter->attribute == "charset")  {
+            foreach ($parts as $part) {
+                foreach ($part->parameters as $parameter) {
+                    if ($parameter->attribute == "charset") {
                         $encoding = $parameter->value;
 
                         $encoding = preg_replace('/Content-Transfer-Encoding/', '', $encoding);
@@ -666,7 +695,8 @@ class Message {
      *
      * @throws Exceptions\ConnectionFailedException
      */
-    private function fetchStructure($structure, $partNumber = null) {
+    private function fetchStructure($structure, $partNumber = null)
+    {
         $this->client->openFolder($this->folder_path);
 
         if ($structure->type == IMAP::MESSAGE_TYPE_TEXT &&
@@ -734,9 +764,9 @@ class Message {
             foreach ($structure->parts as $index => $subStruct) {
                 $prefix = "";
                 if ($partNumber) {
-                    $prefix = $partNumber.".";
+                    $prefix = $partNumber . ".";
                 }
-                $this->fetchStructure($subStruct, $prefix.($index + 1));
+                $this->fetchStructure($subStruct, $prefix . ($index + 1));
             }
         } else {
             if ($this->getFetchAttachmentOption() === true) {
@@ -753,7 +783,8 @@ class Message {
      *
      * @throws Exceptions\ConnectionFailedException
      */
-    protected function fetchAttachment($structure, $partNumber) {
+    protected function fetchAttachment($structure, $partNumber)
+    {
 
         $oAttachment = new Attachment($this, $structure, $partNumber);
 
@@ -773,7 +804,8 @@ class Message {
      *
      * @return $this
      */
-    public function setFetchOption($option) {
+    public function setFetchOption($option)
+    {
         if (is_long($option) === true) {
             $this->fetch_options = $option;
         } elseif (is_null($option) === true) {
@@ -791,7 +823,8 @@ class Message {
      *
      * @return $this
      */
-    public function setFetchBodyOption($option) {
+    public function setFetchBodyOption($option)
+    {
         if (is_bool($option)) {
             $this->fetch_body = $option;
         } elseif (is_null($option)) {
@@ -809,7 +842,8 @@ class Message {
      *
      * @return $this
      */
-    public function setFetchAttachmentOption($option) {
+    public function setFetchAttachmentOption($option)
+    {
         if (is_bool($option)) {
             $this->fetch_attachment = $option;
         } elseif (is_null($option)) {
@@ -827,7 +861,8 @@ class Message {
      *
      * @return $this
      */
-    public function setFetchFlagsOption($option) {
+    public function setFetchFlagsOption($option)
+    {
         if (is_bool($option)) {
             $this->fetch_flags = $option;
         } elseif (is_null($option)) {
@@ -846,7 +881,8 @@ class Message {
      *
      * @return string
      */
-    public function decodeString($string, $encoding) {
+    public function decodeString($string, $encoding)
+    {
         switch ($encoding) {
             case IMAP::MESSAGE_ENC_7BIT:
                 return $string;
@@ -874,7 +910,8 @@ class Message {
      *
      * @return mixed|string
      */
-    public function convertEncoding($str, $from = "ISO-8859-2", $to = "UTF-8") {
+    public function convertEncoding($str, $from = "ISO-8859-2", $to = "UTF-8")
+    {
 
         $from = EncodingAliases::get($from);
         $to = EncodingAliases::get($to);
@@ -899,7 +936,7 @@ class Message {
         }
 
         if (function_exists('iconv') && $from != 'UTF-7' && $to != 'UTF-7') {
-            return @iconv($from, $to.'//IGNORE', $str);
+            return @iconv($from, $to . '//IGNORE', $str);
         } else {
             if (!$from) {
                 return mb_convert_encoding($str, $to);
@@ -915,14 +952,15 @@ class Message {
      *
      * @return string
      */
-    public function getEncoding($structure) {
+    public function getEncoding($structure)
+    {
         if (property_exists($structure, 'parameters')) {
             foreach ($structure->parameters as $parameter) {
                 if (strtolower($parameter->attribute) == "charset") {
                     return EncodingAliases::get($parameter->value);
                 }
             }
-        }elseif (is_string($structure) === true){
+        } elseif (is_string($structure) === true) {
             return mb_detect_encoding($structure);
         }
 
@@ -939,7 +977,8 @@ class Message {
      * @throws InvalidMessageDateException
      * @throws MaskNotFoundException
      */
-    public function getContainingFolder(Folder $folder = null) {
+    public function getContainingFolder(Folder $folder = null)
+    {
         $folder = $folder ?: $this->client->getFolders()->first();
         $this->client->checkConnection();
 
@@ -948,8 +987,8 @@ class Message {
         $client->openFolder($folder->path);
         $uidMatches = \imap_fetch_overview($client->getConnection(), $this->uid, IMAP::FT_UID);
         $uidMatch = count($uidMatches)
-            ? new Message($uidMatches[0]->uid, $uidMatches[0]->msgno, $client)
-            : null;
+        ? new Message($uidMatches[0]->uid, $uidMatches[0]->msgno, $client)
+        : null;
         $client->disconnect();
 
         // \imap_fetch_overview() on a parent folder will return the matching message
@@ -972,7 +1011,8 @@ class Message {
         return null;
     }
 
-    public function getFolder(){
+    public function getFolder()
+    {
         return $this->client->getFolder($this->folder_path);
     }
 
@@ -986,9 +1026,12 @@ class Message {
      * @throws Exceptions\ConnectionFailedException
      * @throws InvalidMessageDateException
      */
-    public function moveToFolder($mailbox = 'INBOX', $expunge = false, $create_folder = true) {
+    public function moveToFolder($mailbox = 'INBOX', $expunge = false, $create_folder = true)
+    {
 
-        if($create_folder) $this->client->createFolder($mailbox, true);
+        if ($create_folder) {
+            $this->client->createFolder($mailbox, true);
+        }
 
         $target_folder = $this->client->getFolder($mailbox);
         $target_status = $target_folder->getStatus(IMAP::SA_ALL);
@@ -996,8 +1039,11 @@ class Message {
         $this->client->openFolder($this->folder_path);
         $status = \imap_mail_move($this->client->getConnection(), $this->uid, $mailbox, IMAP::CP_UID);
 
-        if($status === true){
-            if($expunge) $this->client->expunge();
+        if ($status === true) {
+            if ($expunge) {
+                $this->client->expunge();
+            }
+
             $this->client->openFolder($target_folder->path);
 
             return $target_folder->getMessage($target_status->uidnext, null, $this->fetch_options, $this->fetch_body, $this->fetch_attachment, $this->fetch_flags);
@@ -1013,11 +1059,14 @@ class Message {
      * @return bool
      * @throws Exceptions\ConnectionFailedException
      */
-    public function delete($expunge = true) {
+    public function delete($expunge = true)
+    {
         $this->client->openFolder($this->folder_path);
 
         $status = \imap_delete($this->client->getConnection(), $this->uid, IMAP::FT_UID);
-        if($expunge) $this->client->expunge();
+        if ($expunge) {
+            $this->client->expunge();
+        }
 
         return $status;
     }
@@ -1029,11 +1078,14 @@ class Message {
      * @return bool
      * @throws Exceptions\ConnectionFailedException
      */
-    public function restore($expunge = true) {
+    public function restore($expunge = true)
+    {
         $this->client->openFolder($this->folder_path);
 
         $status = \imap_undelete($this->client->getConnection(), $this->uid, IMAP::FT_UID);
-        if($expunge) $this->client->expunge();
+        if ($expunge) {
+            $this->client->expunge();
+        }
 
         return $status;
     }
@@ -1043,7 +1095,8 @@ class Message {
      *
      * @return AttachmentCollection
      */
-    public function getAttachments() {
+    public function getAttachments()
+    {
         return $this->attachments;
     }
 
@@ -1052,7 +1105,8 @@ class Message {
      *
      * @return boolean
      */
-    public function hasAttachments() {
+    public function hasAttachments()
+    {
         return $this->attachments->isEmpty() === false;
     }
 
@@ -1063,10 +1117,11 @@ class Message {
      * @return bool
      * @throws Exceptions\ConnectionFailedException
      */
-    public function setFlag($flag) {
+    public function setFlag($flag)
+    {
         $this->client->openFolder($this->folder_path);
 
-        $flag = "\\".trim(is_array($flag) ? implode(" \\", $flag) : $flag);
+        $flag = "\\" . trim(is_array($flag) ? implode(" \\", $flag) : $flag);
         $status = \imap_setflag_full($this->client->getConnection(), $this->getUid(), $flag, SE_UID);
         $this->parseFlags();
 
@@ -1080,10 +1135,11 @@ class Message {
      * @return bool
      * @throws Exceptions\ConnectionFailedException
      */
-    public function unsetFlag($flag) {
+    public function unsetFlag($flag)
+    {
         $this->client->openFolder($this->folder_path);
 
-        $flag = "\\".trim(is_array($flag) ? implode(" \\", $flag) : $flag);
+        $flag = "\\" . trim(is_array($flag) ? implode(" \\", $flag) : $flag);
         $status = \imap_clearflag_full($this->client->getConnection(), $this->getUid(), $flag, SE_UID);
         $this->parseFlags();
 
@@ -1094,7 +1150,8 @@ class Message {
      * @return null|object|string
      * @throws Exceptions\ConnectionFailedException
      */
-    public function getRawBody() {
+    public function getRawBody()
+    {
         if ($this->raw_body === null) {
             $this->client->openFolder($this->folder_path);
 
@@ -1107,63 +1164,72 @@ class Message {
     /**
      * @return string
      */
-    public function getHeader() {
+    public function getHeader()
+    {
         return $this->header;
     }
 
     /**
      * @return Client
      */
-    public function getClient() {
+    public function getClient()
+    {
         return $this->client;
     }
 
     /**
      * @return integer
      */
-    public function getFetchOptions() {
+    public function getFetchOptions()
+    {
         return $this->fetch_options;
     }
 
     /**
      * @return boolean
      */
-    public function getFetchBodyOption() {
+    public function getFetchBodyOption()
+    {
         return $this->fetch_body;
     }
 
     /**
      * @return boolean
      */
-    public function getFetchAttachmentOption() {
+    public function getFetchAttachmentOption()
+    {
         return $this->fetch_attachment;
     }
 
     /**
      * @return boolean
      */
-    public function getFetchFlagsOption() {
+    public function getFetchFlagsOption()
+    {
         return $this->fetch_flags;
     }
 
     /**
      * @return mixed
      */
-    public function getBodies() {
+    public function getBodies()
+    {
         return $this->bodies;
     }
 
     /**
      * @return FlagCollection
      */
-    public function getFlags() {
+    public function getFlags()
+    {
         return $this->flags;
     }
 
     /**
      * @return object|null
      */
-    public function getStructure(){
+    public function getStructure()
+    {
         return $this->structure;
     }
 
@@ -1175,21 +1241,23 @@ class Message {
      * @param  null|Message $message
      * @return boolean
      */
-    public function is(Message $message = null) {
+    public function is(Message $message = null)
+    {
         if (is_null($message)) {
             return false;
         }
 
         return $this->uid == $message->uid
-            && $this->message_id == $message->message_id
-            && $this->subject == $message->subject
-            && $this->date->eq($message->date);
+        && $this->message_id == $message->message_id
+        && $this->subject == $message->subject
+        && $this->date->eq($message->date);
     }
 
     /**
      * @return array
      */
-    public function getAttributes(){
+    public function getAttributes()
+    {
         return $this->attributes;
     }
 
@@ -1197,8 +1265,9 @@ class Message {
      * @param $mask
      * @return $this
      */
-    public function setMask($mask){
-        if(class_exists($mask)){
+    public function setMask($mask)
+    {
+        if (class_exists($mask)) {
             $this->mask = $mask;
         }
 
@@ -1208,7 +1277,8 @@ class Message {
     /**
      * @return string
      */
-    public function getMask(){
+    public function getMask()
+    {
         return $this->mask;
     }
 
@@ -1219,12 +1289,13 @@ class Message {
      * @return mixed
      * @throws MaskNotFoundException
      */
-    public function mask($mask = null){
+    public function mask($mask = null)
+    {
         $mask = $mask !== null ? $mask : $this->mask;
-        if(class_exists($mask)){
+        if (class_exists($mask)) {
             return new $mask($this);
         }
 
-        throw new MaskNotFoundException("Unknown mask provided: ".$mask);
+        throw new MaskNotFoundException("Unknown mask provided: " . $mask);
     }
 }
